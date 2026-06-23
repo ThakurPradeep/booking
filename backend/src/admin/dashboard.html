@@ -1,0 +1,321 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Admin Dashboard 2</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --card: #fff;
+            --muted: #6b7280;
+            --accent: #2563eb;
+            --danger: #ef4444
+        }
+
+        html,
+        body {
+            height: 100%
+        }
+
+        body {
+            font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+            margin: 20px;
+            background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+            color: #0f172a
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 20px
+        }
+
+        .muted {
+            color: var(--muted)
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-top: 12px
+        }
+
+        .card {
+            background: var(--card);
+            padding: 16px;
+            border-radius: 10px;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+            border: 1px solid rgba(2, 6, 23, 0.03)
+        }
+
+        .stat {
+            font-size: 20px;
+            font-weight: 700
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px
+        }
+
+        .btn {
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer
+        }
+
+        .btn.secondary {
+            background: #e6eefc;
+            color: var(--accent)
+        }
+
+        .btn.warn {
+            background: var(--danger)
+        }
+
+        .form-row {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 8px
+        }
+
+        .input {
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #e6e9ef
+        }
+
+        #users-list .card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center
+        }
+
+        @media (max-width:900px) {
+            .grid {
+                grid-template-columns: repeat(2, 1fr)
+            }
+        }
+
+        @media (max-width:560px) {
+            .grid {
+                grid-template-columns: 1fr
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start
+            }
+        }
+
+        .charts {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 12px
+        }
+
+        @media (max-width:900px) {
+            .charts {
+                grid-template-columns: 1fr
+            }
+        }
+
+        canvas {
+            max-width: 100%;
+            height: 220px
+        }
+
+        a {
+            color: var(--accent)
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>Admin Dashboard</h1>
+                <div class="muted">Manage users & view system stats</div>
+            </div>
+            <div class="controls">
+                <a href="/" class="muted" style="align-self:center">Open main UI</a>
+            </div>
+        </div>
+
+        <div id="login" class="card" style="max-width:520px;margin-top:16px">
+            <h2 style="margin:0 0 8px 0">Admin Login</h2>
+            <div class="form-row"><label>Username</label><input id="login-user" class="input" /></div>
+            <div class="form-row"><label>Password</label><input id="login-pass" type="password" class="input" /></div>
+            <div style="margin-top:8px"><button id="login-btn" class="btn">Sign in</button></div>
+            <div id="login-error" class="muted" style="color:var(--danger);margin-top:8px"></div>
+        </div>
+
+        <div id="dashboard" style="display:none;margin-top:18px">
+            <div class="grid" id="stats">
+                <!-- JS will populate four stat cards here -->
+            </div>
+
+            <div class="charts" style="margin-top:14px">
+                <div class="card">
+                    <h3 style="margin:0 0 12px 0">Overview</h3>
+                    <canvas id="barChart"></canvas>
+                </div>
+                <div class="card">
+                    <h3 style="margin:0 0 12px 0">Booking Status</h3>
+                    <canvas id="doughnutChart"></canvas>
+                </div>
+            </div>
+
+            <section style="margin-top:20px">
+                <h2 style="margin:0 0 12px 0">Users</h2>
+                <div id="user-error" class="muted" style="color:var(--danger)"></div>
+                <div class="card" style="margin-top:8px">
+                    <div class="form-row"><label>Name</label><input id="u-name" class="input" /></div>
+                    <div class="form-row"><label>Email</label><input id="u-email" class="input" /></div>
+                    <div style="margin-top:8px"><button id="add-user" class="btn">Add User</button></div>
+                </div>
+                <div id="users-list" style="margin-top:12px"></div>
+            </section>
+
+            <div style="margin-top:18px;display:flex;gap:8px;align-items:center">
+                <button id="logout-btn" class="btn secondary">Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const qs = s => document.querySelector(s)
+        const api = (path, opts = {}) => fetch('/admin/api' + path, Object.assign({ credentials: 'same-origin', headers: { 'content-type': 'application/json' } }, opts))
+
+        async function doLogin() {
+            qs('#login-error').textContent = ''
+            const user = qs('#login-user').value
+            const pass = qs('#login-pass').value
+            try {
+                const res = await api('/login', { method: 'POST', body: JSON.stringify({ user, pass }) })
+                if (!res.ok) throw new Error('invalid credentials')
+                await loadDashboard()
+            } catch (e) { qs('#login-error').textContent = e.message }
+        }
+
+        async function doLogout() {
+            await api('/logout', { method: 'POST' })
+            qs('#dashboard').style.display = 'none'
+            qs('#login').style.display = ''
+        }
+
+        let barChart, doughnutChart
+        function renderCharts(d) {
+            const ctxBar = document.getElementById('barChart').getContext('2d')
+            const ctxD = document.getElementById('doughnutChart').getContext('2d')
+            const barData = { labels: ['Total Resources', 'Active', 'Upcoming', 'Cancelled'], datasets: [{ label: 'Count', data: [d.totalResources, d.activeBookings, d.upcomingBookings, d.cancelledBookings], backgroundColor: ['#93c5fd', '#60a5fa', '#7dd3fc', '#fecaca'] }] }
+            if (barChart) barChart.destroy()
+            barChart = new Chart(ctxBar, { type: 'bar', data: barData, options: { responsive: true, plugins: { legend: { display: false } } } })
+            const doughData = { labels: ['Active', 'Cancelled'], datasets: [{ data: [d.activeBookings, d.cancelledBookings], backgroundColor: ['#06b6d4', '#fb7185'] }] }
+            if (doughnutChart) doughnutChart.destroy()
+            doughnutChart = new Chart(ctxD, { type: 'doughnut', data: doughData, options: { responsive: true, plugins: { legend: { position: 'bottom' } } } })
+        }
+
+        async function loadDashboard() {
+            try {
+                const r = await fetch('/api/dashboard')
+                if (!r.ok) throw new Error('failed')
+                const d = await r.json()
+                qs('#stats').innerHTML = `
+          <div class="card"><div class="muted">Total Resources</div><div class="stat">${d.totalResources}</div></div>
+          <div class="card"><div class="muted">Active Bookings</div><div class="stat">${d.activeBookings}</div></div>
+          <div class="card"><div class="muted">Upcoming</div><div class="stat">${d.upcomingBookings}</div></div>
+          <div class="card"><div class="muted">Cancelled</div><div class="stat">${d.cancelledBookings}</div></div>
+        `
+                renderCharts(d)
+                qs('#login').style.display = 'none'
+                qs('#dashboard').style.display = ''
+                loadUsers()
+            } catch (e) { console.error(e) }
+        }
+
+        async function loadUsers() {
+            qs('#user-error').textContent = ''
+            try {
+                const res = await api('/users')
+                if (!res.ok) { qs('#users-list').innerHTML = '<div class="muted">Unauthorized</div>'; return }
+                const users = await res.json()
+                const container = qs('#users-list')
+                if (!users.length) container.innerHTML = '<div class="muted">No users</div>'
+                else container.innerHTML = users.map(u => `
+          <div class="card" data-id="${u.id}">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="flex:1">
+                <div style="font-weight:600">${u.name} <span class="muted">${u.email || ''}</span></div>
+              </div>
+              <div>
+                <button class="btn edit">Edit</button>
+                <button class="btn warn delete">Delete</button>
+              </div>
+            </div>
+          </div>
+        `).join('')
+                container.querySelectorAll('.edit').forEach(btn => btn.addEventListener('click', onEdit))
+                container.querySelectorAll('.delete').forEach(btn => btn.addEventListener('click', onDelete))
+            } catch (e) { qs('#user-error').textContent = e.message }
+        }
+
+        async function onEdit(e) {
+            const card = e.target.closest('.card')
+            const id = card.getAttribute('data-id')
+            const name = prompt('Name', card.querySelector('div').innerText.split('\n')[0])
+            if (name === null) return
+            const email = prompt('Email', '')
+            if (email === null) return
+            const res = await api('/users/' + id, { method: 'PUT', body: JSON.stringify({ name, email }) })
+            if (!res.ok) alert('Failed')
+            else loadUsers()
+        }
+
+        async function onDelete(e) {
+            if (!confirm('Delete user?')) return
+            const card = e.target.closest('.card')
+            const id = card.getAttribute('data-id')
+            const res = await api('/users/' + id, { method: 'DELETE' })
+            if (!res.ok) alert('Failed')
+            else loadUsers()
+        }
+
+        qs('#login-btn').addEventListener('click', doLogin)
+        qs('#logout-btn').addEventListener('click', doLogout)
+        qs('#add-user').addEventListener('click', async () => {
+            const name = qs('#u-name').value
+            const email = qs('#u-email').value
+            if (!name) return alert('name required')
+            const res = await api('/users', { method: 'POST', body: JSON.stringify({ name, email }) })
+            if (!res.ok) { const j = await res.json().catch(() => ({})); alert('Failed: ' + (j.error || res.status)) }
+            else { qs('#u-name').value = ''; qs('#u-email').value = ''; loadUsers() }
+        })
+
+            // try detect already logged in
+            (async () => { try { const r = await api('/users'); if (r.ok) loadDashboard() } catch (e) { } })()
+    </script>
+</body>
+
+</html>
