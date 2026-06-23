@@ -1,6 +1,13 @@
 # Resource Booking System
 
-Full-stack Resource Booking System (Backend: Node.js + Express, Frontend: React + TypeScript + Redux Toolkit). Database: MySQL/Postgres (database name: `booking`).
+Resource Booking System 
+(Backend: 
+Node.js + Express, Frontend: React + TypeScript + Redux Toolkit).
+
+Database: MySQL (database name: `booking`).
+DB credentials (example):
+- user: root
+- password: 12345678
 
 Quick start (backend):
 
@@ -16,6 +23,4 @@ Quick start (frontend):
 2. npm install
 3. npm run dev
 
-DB credentials (example):
-- user: root
-- password: 12345678
+
