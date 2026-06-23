@@ -66,7 +66,7 @@ npm run build
 Admin credentials (dev default)
 
 - Username: `admin`
-- Password: `password`
+- Password: `admin@1234`
 - You can override with environment variables `ADMIN_USER` and `ADMIN_PASS`.
 
 Files of interest
@@ -75,14 +75,3 @@ Files of interest
 - `backend/seed.js` — seeds sample data
 - `backend/src` — backend source (routes, db, admin files)
 - `frontend/src` — frontend source (React + Redux Toolkit)
-
-Notes
-
-- Redux Toolkit is used for state management in the frontend (slices under `frontend/src/slices`).
-- Slices include async thunks, loading states and error fields for resources, bookings, and users.
-
-If you want, I can:
-- Create the remote GitHub repo and push (requires your GitHub access token/SSH key configured locally), or
-- Prepare a zip of the workspace for upload.
-
-Contact me which option you prefer.
